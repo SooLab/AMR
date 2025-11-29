@@ -113,7 +113,7 @@ def train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writ
             neg_mask = targets['src_neg_mask']
             neg_sim = (sim_mat * neg_mask.float()).sum(-1) / (neg_mask.float().sum(-1) + 1e-6)
             loss_disc = torch.log(1+torch.exp((neg_sim-pos_sim)/0.07)).mean()
-            losses = losses + opt.distill_loss_coef*loss_dill + opt.disc_loss_coef*loss_disc
+            losses = losses + opt.dill_loss_coef*loss_dill + opt.disc_loss_coef*loss_disc
         time_meters["model_forward_time"].update(time.time() - timer_start)
 
         timer_start = time.time()

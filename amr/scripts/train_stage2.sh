@@ -12,7 +12,7 @@ eval_split_name=val
 
 ######## setup video+text features
 feat_root=/data1/wzx/datasets/qvhighlights_feature
-resume='Your_pretrained_model_path/model_e0039.ckpt'
+resume=test_amr/hl-video_tef-exp-2025_11_28_22_30_12/model_e0039.ckpt
 
 
 # video features
@@ -75,4 +75,5 @@ PYTHONPATH=$PYTHONPATH:. python amr/train.py \
 --disc_loss_coef ${disc_loss_coef} \
 --dill_loss_coef ${dill_loss_coef} \
 --stage ${stage} \
+--resume ${resume} \
 ${@:1}

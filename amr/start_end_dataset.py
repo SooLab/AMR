@@ -50,8 +50,11 @@ class StartEndDataset(Dataset):
         self.max_windows = max_windows  # maximum number of windows to use as labels
         self.span_loss_type = span_loss_type
         self.txt_drop_ratio = txt_drop_ratio
+        self.train = True  # whether in training mode
         if "val" in data_path or "test" in data_path:
             assert txt_drop_ratio == 0
+            self.train = False
+            self.v_feat_dirs = [d.replace("_aug", "") for d in self.v_feat_dirs]
 
         # checks
         assert q_feat_type in self.Q_FEAT_TYPES
