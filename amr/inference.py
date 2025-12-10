@@ -319,12 +319,41 @@ def set_active_weights(model):
             if target_name in param_dict:
                 target_param = param_dict[target_name]
                 param.data.copy_(target_param.data)
-                print(f"Set MOE weights for '{name}' from '{target_name}'")
+                print(f"Set active weights for '{name}' from '{target_name}'")
             else:
                 print(f"Warning: Target parameter '{target_name}' not found for '{name}'")
     
     return model
 
+def setup_model_inference(opt):
+    """setup model/optimizer/scheduler and load checkpoints when needed"""
+    logger.info("setup model/optimizer/scheduler")
+    if opt.stage == "distill":
+        model, criterion, _ = build_model(opt)
+    else:
+        model, criterion = build_model(opt)
+    if opt.device.type == "cuda":
+        logger.info("CUDA enabled.")
+        model.to(opt.device)
+        criterion.to(opt.device)
+
+    param_dicts = [{"params": [p for n, p in model.named_parameters() if p.requires_grad]}]
+    optimizer = torch.optim.AdamW(param_dicts, lr=opt.lr, weight_decay=opt.wd)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opt.lr_drop)
+
+    if opt.resume is not None:
+        logger.info(f"Load checkpoint from {opt.resume}")
+        checkpoint = torch.load(opt.resume, map_location="cpu")
+        model.load_state_dict(checkpoint["model"], strict=False)
+        if opt.resume_all:
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+            opt.start_epoch = checkpoint['epoch'] + 1
+        logger.info(f"Loaded model saved at epoch {checkpoint['epoch']} from checkpoint: {opt.resume}")
+    else:
+        logger.warning("If you intend to evaluate the model, please specify --resume with ckpt path")
+
+    return model, criterion, optimizer, lr_scheduler
 def setup_model(opt):
     """setup model/optimizer/scheduler and load checkpoints when needed"""
     logger.info("setup model/optimizer/scheduler")
@@ -435,7 +464,7 @@ def start_inference(train_opt=None, split=None, splitfile=None):
         )
 
 
-    model, criterion, _, _ = setup_model(opt)
+    model, criterion, _, _ = setup_model_inference(opt)
 
     save_submission_filename = "hl_{}_submission.jsonl".format(
         opt.eval_split_name)
